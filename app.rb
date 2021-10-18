@@ -3,38 +3,29 @@ require_relative 'time_formatter'
 class App
 
   def call(env)
-    @query = env["QUERY_STRING"]
-    @path = env["REQUEST_PATH"]
-    @body = TimeFormatter.new(@query)
-    response
-  end
-
-  def status
-    if @path == "/time" && @body.acceptable_format?
-      200
-    elsif @path == "/time"
-      400
+    if path_wrong?(env["REQUEST_PATH"])
+      response(404, 'invalid path')
     else
-      404
+      handle_params(env["QUERY_STRING"])
     end
   end
 
-  def headers
-    { 'Content-Type' => 'text/plain' }
+  def path_wrong?(path)
+    path != "/time"
   end
 
-  def body
-    if @path == "/time" && @body.acceptable_format?
-      @body.convert_format
-    elsif @path == "/time"
-      ["Unknown time format: #{@body.unknown_format}"]
+  def handle_params(params)
+    formatter = TimeFormatter.new(params)
+    formatter.call
+    if formatter.valid?
+      response(200, formatter.time_string)
     else
-      ["Page noy found"]
+      response(400, formatter.invalid_string)
     end
   end
 
-  def response
-    Rack::Response.[](status, headers, body).finish
+  def response(status, body)
+    Rack::Response.new(body, status, { 'Content-Type' => 'text/plain' }).finish
   end
 
 end
