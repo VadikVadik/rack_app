@@ -1,22 +1,21 @@
 class TimeFormatter
 
+  ACCEPTABLE_FORMAT = { "year" => '%Y-',
+                         "month" => '%m-',
+                         "day" => '%d ',
+                         "hour" => '%H:',
+                         "minute" => '%M:',
+                         "second" => '%S' }
+
   def initialize(format)
-    @date = DateTime.now
     @format = format
-    @user_format
-    @acceptable_format
-    @unknown_format
+    @user_format = ""
+    @unknown_format = []
   end
 
   def call
     @user_format = (Rack::Utils.parse_nested_query(@format)).values.join.split(",")
-    @acceptable_format = { "year" => '%Y-',
-                           "month" => '%m-',
-                           "day" => '%d ',
-                           "hour" => '%H:',
-                           "minute" => '%M:',
-                           "second" => '%S' }
-    @unknown_format = @user_format - @acceptable_format.keys
+    @unknown_format = @user_format - ACCEPTABLE_FORMAT.keys
   end
 
   def valid?
@@ -25,9 +24,9 @@ class TimeFormatter
 
   def time_string
     @user_format.map! do |i|
-      @acceptable_format[i]
+      ACCEPTABLE_FORMAT[i]
     end
-    @date.strftime(@user_format.join(''))
+    DateTime.now.strftime(@user_format.join(''))
   end
 
   def invalid_string
